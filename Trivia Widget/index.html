@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Trivia Widget</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto; }
+    .question { margin-bottom: 20px; }
+    .hidden { display: none; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+  <h2>Team Trivia</h2>
+  <div id="team-section">
+    <label>Team Name: <input type="text" id="team-name" /></label>
+    <button onclick="startTrivia()">Start</button>
+  </div>
+  <form id="trivia-form" class="hidden" onsubmit="submitAnswers(event)">
+    <div id="questions"></div>
+    <button type="submit">Submit Answers</button>
+  </form>
+  <div id="confirmation" class="hidden success">Answers submitted! Good luck!</div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxNO5jIyP5jeb7RB5ShGIWvJ-gLMyAQVWrHiZX4OntAQ6exd2RRuzmhQ0b9SRSCIbY3bg/exec'
+    let questions = [];
+    let teamName = '';
+
+    function startTrivia() {
+      teamName = document.getElementById('team-name').value.trim();
+      if (!teamName) {
+        alert('Please enter your team name.');
+        return;
+      }
+      fetchQuestions();
+    }
+
+    function fetchQuestions() {
+      fetch(`${SCRIPT_URL}?action=getQuestions`)
+        .then(res => res.json())
+        .then(data => {
+          questions = data;
+          showQuestions();
+        })
+        .catch(() => alert('Failed to load questions.'));
+    }
+
+    function showQuestions() {
+      document.getElementById('team-section').classList.add('hidden');
+      const questionsDiv = document.getElementById('questions');
+      questionsDiv.innerHTML = '';
+      questions.forEach(q => {
+        questionsDiv.innerHTML += `
+          <div class="question">
+            <strong>Q${q.number}:</strong> ${q.question}<br>
+            <input type="text" name="answer${q.number}" required placeholder="Your answer">
+          </div>
+        `;
+      });
+      document.getElementById('trivia-form').classList.remove('hidden');
+    }
+
+    function submitAnswers(event) {
+      event.preventDefault();
+      const form = event.target;
+      const promises = questions.map(q => {
+        const answer = form[`answer${q.number}`].value.trim();
+        return fetch(`${SCRIPT_URL}?action=submitAnswer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            teamName: teamName,
+            questionNumber: q.number,
+            answer: answer
+          })
+        });
+      });
+      Promise.all(promises)
+        .then(() => {
+          form.classList.add('hidden');
+          document.getElementById('confirmation').classList.remove('hidden');
+        })
+        .catch(() => alert('Failed to submit answers.'));
+    }
+  </script>
+</body>
+</html>
