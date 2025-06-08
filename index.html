@@ -23,7 +23,7 @@
   <div id="confirmation" class="hidden success">Answers submitted! Good luck!</div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxNO5jIyP5jeb7RB5ShGIWvJ-gLMyAQVWrHiZX4OntAQ6exd2RRuzmhQ0b9SRSCIbY3bg/exec'
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwASiVrCjy_SzFLTkeohiRgxIiFxSvx32ozDYmyxqwIoXuZiGTPT971eznh16828QcgEA/exec'
     let questions = [];
     let teamName = '';
 
@@ -74,12 +74,16 @@
             questionNumber: q.number,
             answer: answer
           })
-        });
+        }).then(r => r.json());
       });
       Promise.all(promises)
-        .then(() => {
-          form.classList.add('hidden');
-          document.getElementById('confirmation').classList.remove('hidden');
+        .then(results => {
+          if (results.some(r => r.status !== "success")) {
+            alert("Failed to submit one or more answers: " + results.map(r => r.message || "").join(", "));
+          } else {
+            form.classList.add('hidden');
+            document.getElementById('confirmation').classList.remove('hidden');
+          }
         })
         .catch(() => alert('Failed to submit answers.'));
     }
